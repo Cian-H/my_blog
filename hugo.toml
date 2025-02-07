@@ -11,6 +11,7 @@ user = "cianh"
 hostname = "bulba.space"
 sitedescription = "The ramblings of a sole scientist, shared here for no good reason..."
 author = { name = "Cian Hughes", email = "hugo@example.com" }
+favicon = "favicon.ico"
 social = [
     { key = 0, name = "github", url = "https://github.com/Cian-H", icon = "fa-brands fa-github", target = "_blank", aria = "GitHub Profile" },
     { key = 1, name = "gitlab", url = "https://https://gitlab.com/Cian-H", icon = "fa-brands fa-gitlab", target = "_blank", aria = "GitHub Profile" },
