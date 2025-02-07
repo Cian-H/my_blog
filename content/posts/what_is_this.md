@@ -4,8 +4,6 @@ draft = false
 title = 'What is this?'
 +++
 
-# What is this?
-
 If you've stumbled across this, you're probably asking yourself: "What the hell is this?".
 Or you might have any one of a number of questions about it. I highly doubt anyone but me
 will ever read any of this blog but, in case they do, I feel it should probably begin with
