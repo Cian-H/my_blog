@@ -10,6 +10,7 @@ in {
   packages =
     (with pkgs; [
       git
+      just
     ])
     ++ (with pkgs-unstable; [
       dart-sass
