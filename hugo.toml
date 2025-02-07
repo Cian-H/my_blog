@@ -1,0 +1,31 @@
+baseURL = 'https://blog.bulba.space/'
+languageCode = 'en-ie'
+title = 'Machinations of a Hyperactive Mind'
+enableRobotsTXT = true
+
+[module]
+imports = [{ path = 'github.com/LordMathis/hugo-theme-nightfall' }]
+
+[params]
+user = "cianh"
+hostname = "bulba.space"
+sitedescription = "The ramblings of a sole scientist, shared here for no good reason..."
+author = { name = "Cian Hughes", email = "hugo@example.com" }
+social = [
+    { key = 0, name = "github", url = "https://github.com/Cian-H", icon = "fa-brands fa-github", target = "_blank", aria = "GitHub Profile" },
+    { key = 1, name = "gitlab", url = "https://https://gitlab.com/Cian-H", icon = "fa-brands fa-gitlab", target = "_blank", aria = "GitHub Profile" },
+    { key = 2, name = "linkedin", url = "https://www.linkedin.com/in/cian-hughes-03211183/", icon = "fa-brands fa-linkedin", target = "_blank", aria = "GitHub Profile" },
+    { key = 3, name = "email", url = "mailto:chughes000@gmail.com", icon = "fa-solid fa-envelope" },
+    { key = 4, name = "orcid", url = "https://orcid.org/0000-0002-4863-733X", icon = "fa-brands fa-orcid" },
+]
+published = true
+readingTime = true
+styles = { color = "CF6EFF" }
+
+[menu]
+header = [{ name = "posts", weight = 0, url = "/posts" }]
+
+[sitemap]
+changefreq = "yearly"
+filename = "sitemap.xml"
+priority = 0
