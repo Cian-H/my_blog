@@ -1,6 +1,6 @@
 +++
-date = '2025-02-17T00:51:14Z'
-draft = true
+date = '2025-11-17T00:51:14Z'
+draft = false
 title = 'Fortran features that fascinate me'
 +++
 
