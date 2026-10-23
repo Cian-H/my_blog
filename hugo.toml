@@ -22,6 +22,7 @@ social = [
 published = true
 readingTime = true
 styles = { color = "CF6EFF" }
+math = true
 
 [menu]
 header = [{ name = "posts", weight = 0, url = "/posts" }]
@@ -30,3 +31,14 @@ header = [{ name = "posts", weight = 0, url = "/posts" }]
 changefreq = "yearly"
 filename = "sitemap.xml"
 priority = 0
+
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true
+    [markup.goldmark.extensions.passthrough]
+      enable = true
+      [markup.goldmark.extensions.passthrough.delimiters]
+        block = [['\[', '\]'], ['$$', '$$']]
+        inline = [['\(', '\)'], ['$', '$']]
+
