@@ -1,5 +1,5 @@
 +++
-date = '2025-02-17T00:26:56Z'
+date = '2026-10-23T18:06:15+01:00'
 draft = false
 math = true
 title = 'Fun acts with activation functions'
