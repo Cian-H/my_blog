@@ -1,0 +1,18 @@
+{{ $src := .Get "src" | default "/posts/fun_acts_with_activation_functions/activation_figure.html" }}
+{{ $caption := .Get "caption" | default "Comparison of <em>SiLU</em>, <em>Hardswish</em>, and <em>Splish</em> activation functions." }}
+<figure class="activation-figure-container" style="margin: 2.5rem 0 1.5rem 0; width: 100%;">
+  <iframe
+    src="{{ $src }}"
+    width="100%"
+    height="480"
+    style="border: none; border-radius: 8px; width: 100%; display: block; background: #252627;"
+    scrolling="no"
+    loading="lazy"
+    title="{{ $caption | plainify }}">
+  </iframe>
+  {{ with $caption }}
+  <figcaption style="text-align: center; color: #a0a0a0; font-size: 0.9em; margin-top: 0.75rem;">
+    {{ . | safeHTML }}
+  </figcaption>
+  {{ end }}
+</figure>
