@@ -2,6 +2,7 @@
 date = '2026-10-25T03:52:24Z'
 draft = false
 title = "We've been doing agentic development wrong"
+math = true
 +++
 
 So, a bit of a story time here but I promise it's relevant to the title if you follow the thought
@@ -20,7 +21,7 @@ So, I gave up!
 Fast forward almost a decade and I was in a bit of a different situation. I had a ton of practical
 programming experience, but I really wanted to get to grips with the finer theory of the craft. To
 learn that I did some research into which books are considered the landmark texts in computer
-science and one caught my attention, a book the CS community affectonately referred to as "The
+science and one caught my attention, a book the CS community affectionately referred to as "The
 Wizard Book". That book was, of course, Abelson and Sussman's 1984 "Structure and Interpretation
 of Computer Programs" (SICP for short).
 
@@ -28,7 +29,7 @@ of Computer Programs" (SICP for short).
 
 Oooooh, so weird and wizard-ey. So $\lambda$! And what's with the weird table with the lion foot?
 
-Anyway the only problem was that this book is not only uses lisp, it was literally the origin
+Anyway the only problem was that this book not only uses lisp, it was literally the origin
 point for one of the 3 main lisp dialects: "scheme". That almost put me off, but I decided to try
 it anyway. I'm not sure if it's the quality of the book, or the fact I'm just a better programmer
 than I used to be (probably a bit of both), but 50 pages in _I was hooked_. Where other
@@ -97,15 +98,15 @@ of LLMs when they write lisp. And this is where the project evolved...
 
 ## So, what next?
 
-Ok, so if this doesn't work how can we fix this? Well, to start with our program would need to
-our MCP to remove an excess parenthesis to make a valid tree. Then, it would need to be able to
+Ok, so if this doesn't work how can we fix this? Well, to start with our MCP would need to
+remove an excess parenthesis to make a valid tree. Then, it would need to be able to
 parse the program into a complete tree. Finally, we would need a way to show the agent the nodes
 in the tree and ask it "which node needs to be split to restore the intended tree?". But, this
-posed a whole new problem: how do we determine whoch parenthesis is the excess one? This is the
+posed a whole new problem: how do we determine which parenthesis is the excess one? This is the
 same problem as before but in reverse! But, that second and third step **did** actually spark a
 new, better idea. If we're parsing the tree, and then adding a node `split` operation; we've
 now done most of the hard work in writing an entire structural editing tool using the "paredit"
-set of operations. Paredit has (at it's most simple) 6 basic operations: `insert`, `remove`,
+set of operations. Paredit has (at its most simple) 6 basic operations: `insert`, `remove`,
 `wrap`, `unwrap`, `slurp`, and `barf`. For those who are not lisp programmers (aka: all the
 normal programmers who don't have a weird fascination with niche languages), paredit will be a bit
 of a new concept, but it isn't actually that complicated. It's basically a series of editor macros
@@ -242,8 +243,8 @@ Well, anecdotally: immediately the feature list grew significantly, as did the l
 didn't grow? The token usage. In fact, that continued to shrink further and further over time.
 And, based on my own code review (as, admittedly, more of a schemer than a common lisper): the
 code consistently seems to have improved. By dogfooding the MCP, the agent found and squashed
-dozens of bugs along the way as we added more advacned editing, code awareness, and code analysis
-features. In it's current form: the MCP server even allows multiple concurrent agents to work
+dozens of bugs along the way as we added more advanced editing, code awareness, and code analysis
+features. In its current form: the MCP server even allows multiple concurrent agents to work
 on the tree in parallel, branching off and merging various instances of the program as they work.
 It's actually been really cool to see!
 
@@ -440,8 +441,8 @@ Overall, this was a fun little project. And it resulted in an MCP I've actually 
 quite a lot when I'm writing little babashka scripts or racket analyses. It has also convinced me
 that the future of agentic development likely lies in direct AST manipulation by the agents. Of
 course, this does pose quite a roadblock with many languages that aren't lisp; lisp is unique in
-that you're effectively writing an AST by hand when you write lisp. But that doesn't mean it can
-t be done for other languages. This has tempted me to maybe try something similar in python using
+that you're effectively writing an AST by hand when you write lisp. But that doesn't mean it
+can't be done for other languages. This has tempted me to maybe try something similar in python using
 `ast.parse` and `ast.unparse`, but I suspect it wouldn't be anywhere near as simple as it sounds.
 In the meantime, I will remain content with my cool little project that manages to demonstrate
 that there is still a lot of value to be had for this old, 1950's programming language in modern
