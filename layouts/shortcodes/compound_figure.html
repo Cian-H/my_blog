@@ -1,0 +1,36 @@
+{{ $src := .Get "src" | default "/posts/structural_editing_in_agentic_development/compound_operations.html" }}
+{{ $caption := .Get "caption" | default "Compound structural editing operations composed from the six primitives: split, join, raise, and transpose." }}
+{{ $height := .Get "height" | default "880" }}
+{{ $id := printf "compound-iframe-%d" (now.UnixNano) }}
+<figure class="structural-figure-container" style="margin: 2.5rem 0 1.5rem 0; width: 100%;">
+  <iframe
+    id="{{ $id }}"
+    src="{{ $src }}"
+    width="100%"
+    height="{{ $height }}"
+    style="border: none; border-radius: 8px; width: 100%; min-height: {{ $height }}px; display: block; background: #292a2d; transition: height 0.2s ease;"
+    loading="lazy"
+    title="{{ $caption | plainify }}">
+  </iframe>
+  {{ with $caption }}
+  <figcaption style="text-align: center; color: #a0a0a0; font-size: 0.9em; margin-top: 0.75rem;">
+    {{ . | safeHTML }}
+  </figcaption>
+  {{ end }}
+</figure>
+
+<script>
+  (function() {
+    function handleResize(e) {
+      if (e.data && e.data.type === 'compound-figure-resize') {
+        var frame = document.getElementById('{{ $id }}');
+        if (frame && e.data.height) {
+          var targetH = Math.max(e.data.height, 820);
+          frame.style.height = targetH + 'px';
+          frame.style.minHeight = targetH + 'px';
+        }
+      }
+    }
+    window.addEventListener('message', handleResize);
+  })();
+</script>

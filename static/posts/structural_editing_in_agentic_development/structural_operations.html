@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Structural Editing Operations</title>
+<style>
+  :root {
+    --bg-page: var(--theme-bg, #292a2d);
+    --bg-card: var(--theme-card-bg, #252627);
+    --border-card: var(--theme-border, #3d4046);
+    --bg-tree-box: #1e1f21;
+    --border-tree-box: #34373d;
+    --bg-code: #17181a;
+    --border-code: #34373d;
+    --text-primary: var(--theme-text, #f8f8ff);
+    --text-secondary: #b0b4bc;
+    --text-dim: #7e838d;
+    --text-code: #ececf1;
+    --accent: var(--theme-accent, #CF6EFF);
+    --cursor: #fbbf24;
+
+    /* Semantics */
+    --c-ins: #34d399;
+    --c-ins-bg: rgba(52, 211, 153, 0.16);
+    --c-rem: #f87171;
+    --c-rem-bg: rgba(248, 113, 113, 0.16);
+    --c-wrap: #CF6EFF;
+    --c-wrap-bg: rgba(207, 110, 255, 0.16);
+    --c-unw: #fbbf24;
+    --c-unw-bg: rgba(251, 191, 36, 0.16);
+    --c-slurp: #22d3ee;
+    --c-slurp-bg: rgba(34, 211, 238, 0.16);
+    --c-barf: #818cf8;
+    --c-barf-bg: rgba(129, 140, 248, 0.16);
+
+    --font-sans: 'Open Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-mono: 'Fira Mono', "Hack", monospace;
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg-page: #ffffff;
+      --bg-card: #f6f8fa;
+      --border-card: #d0d7de;
+      --bg-tree-box: #ffffff;
+      --border-tree-box: #e1e4e8;
+      --bg-code: #f1f3f5;
+      --border-code: #d0d7de;
+      --text-primary: #1f2328;
+      --text-secondary: #424a53;
+      --text-dim: #6e7781;
+      --text-code: #1f2328;
+      --accent: #8250df;
+    }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background-color: var(--bg-page);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    line-height: 1.5;
+    padding: 0.25rem 0.15rem 1rem 0.15rem;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  .container {
+    max-width: 760px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .section-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding-bottom: 0.35rem;
+    border-bottom: 1.5px solid var(--border-card);
+  }
+
+  .dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+  }
+
+  .section-title { color: var(--text-primary); }
+  .section-subtitle { opacity: 0.95; }
+
+  .cards-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.15rem;
+  }
+
+  @media (max-width: 680px) {
+    .cards-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: 8px;
+    padding: 1.05rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+  }
+
+  .op-number {
+    font-weight: 800;
+    font-size: 1.2rem;
+  }
+
+  .op-title {
+    font-weight: 700;
+    font-size: 1.1rem;
+    letter-spacing: 0.02em;
+    color: var(--text-primary);
+  }
+
+  .category-badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-left: auto;
+  }
+
+  .tree-box {
+    background: var(--bg-tree-box);
+    border: 1px solid var(--border-tree-box);
+    border-radius: 6px;
+    padding: 0.75rem 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    min-height: 120px;
+  }
+
+  .tree-side {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .tree-side-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .transition-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .action-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  .transition-arrow {
+    width: 36px;
+    height: 15px;
+  }
+
+  .code-box {
+    background: var(--bg-code);
+    border: 1px solid var(--border-code);
+    border-radius: 5px;
+    padding: 0.55rem 0.75rem;
+    font-family: var(--font-mono);
+    font-size: 0.92rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    color: var(--text-code);
+    letter-spacing: 0.02em;
+  }
+
+  .code-arrow {
+    opacity: 0.9;
+    font-weight: 700;
+  }
+
+  .cursor {
+    color: var(--cursor);
+    font-weight: 800;
+  }
+
+  .explanations {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    font-size: 0.83rem;
+    line-height: 1.4;
+  }
+
+  .exp-line {
+    display: flex;
+    gap: 0.45rem;
+    align-items: baseline;
+  }
+
+  .exp-lbl {
+    font-weight: 700;
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+  }
+
+  .exp-txt {
+    color: var(--text-secondary);
+  }
+
+  /* Tree SVG styling */
+  svg.tree {
+    overflow: visible;
+  }
+
+  .node-bg {
+    fill: #2f2a42;
+    stroke: #9d92ca;
+    stroke-width: 1.8;
+    rx: 6;
+  }
+
+  .node-text {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 700;
+    fill: #f3f0fc;
+    text-anchor: middle;
+    dominant-baseline: central;
+  }
+
+  .leaf-bg {
+    fill: #2d3138;
+    stroke: #6f7584;
+    stroke-width: 1.8;
+    rx: 5;
+  }
+
+  .leaf-text {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 700;
+    fill: #f0f0f5;
+    text-anchor: middle;
+    dominant-baseline: central;
+  }
+
+  .edge-line {
+    stroke: #6f7584;
+    stroke-width: 1.8;
+  }
+</style>
+</head>
+<body>
+
+<div class="container" id="main-container">
+
+  <!-- ROW 1: LIFECYCLE -->
+  <div class="section-banner">
+    <div class="dot" style="background: var(--c-ins);"></div>
+    <span class="section-title">Lifecycle Operations</span>
+    <span style="color: var(--text-dim);">·</span>
+    <span class="section-subtitle" style="color: var(--c-ins);">Node Creation & Pruning</span>
+  </div>
+
+  <div class="cards-grid">
+    <!-- Card 1: INSERT -->
+    <div class="card" style="border-top: 3px solid var(--c-ins);">
+      <div class="card-header">
+        <span class="op-number" style="color: var(--c-ins);">1</span>
+        <span class="op-title">INSERT</span>
+        <span class="category-badge" style="background: var(--c-ins-bg); color: var(--c-ins);">Arity +1</span>
+      </div>
+
+      <div class="tree-box">
+        <div class="tree-side">
+          <span class="tree-side-label">Before</span>
+          <svg class="tree" width="86" height="74" viewBox="0 0 86 74">
+            <line x1="43" y1="20" x2="22" y2="50" class="edge-line" />
+            <line x1="43" y1="20" x2="64" y2="50" class="edge-line" />
+            <rect x="18" y="6" width="50" height="24" class="node-bg" />
+            <text x="43" y="18" class="node-text">list</text>
+            <rect x="8" y="50" width="28" height="22" class="leaf-bg" />
+            <text x="22" y="61" class="leaf-text">A</text>
+            <rect x="50" y="50" width="28" height="22" class="leaf-bg" />
+            <text x="64" y="61" class="leaf-text">B</text>
+          </svg>
+        </div>
+
+        <div class="transition-center">
+          <span class="action-label" style="color: var(--c-ins);">+ Graft</span>
+          <svg class="transition-arrow" viewBox="0 0 38 16">
+            <line x1="2" y1="8" x2="28" y2="8" stroke="var(--c-ins)" stroke-width="2.5" stroke-linecap="round"/>
+            <polygon points="26,3 36,8 26,13" fill="var(--c-ins)"/>
+          </svg>
+        </div>
+
+        <div class="tree-side">
+          <span class="tree-side-label">After</span>
+          <svg class="tree" width="116" height="74" viewBox="0 0 116 74">
+            <line x1="58" y1="20" x2="20" y2="50" class="edge-line" />
+            <line x1="58" y1="20" x2="58" y2="50" stroke="var(--c-ins)" stroke-width="2.2" />
+            <line x1="58" y1="20" x2="96" y2="50" class="edge-line" />
+            <rect x="33" y="6" width="50" height="24" class="node-bg" />
+            <text x="58" y="18" class="node-text">list</text>
+            <rect x="6" y="50" width="28" height="22" class="leaf-bg" />
+            <text x="20" y="61" class="leaf-text">A</text>
+            <rect x="44" y="50" width="28" height="22" style="fill: var(--c-ins-bg); stroke: var(--c-ins); stroke-width: 2; rx: 5;" />
+            <text x="58" y="61" style="font-family: var(--font-mono); font-size: 14px; font-weight: 800; fill: var(--c-ins); text-anchor: middle; dominant-baseline: central;">X</text>
+            <rect x="82" y="50" width="28" height="22" class="leaf-bg" />
+            <text x="96" y="61" class="leaf-text">B</text>
+          </svg>
+        </div>
+      </div>
+
+      <div class="code-box">
+        <span>(list A <span class="cursor">▮</span> B)</span>
+        <span class="code-arrow" style="color: var(--c-ins);">──▶</span>
+        <span>(list A <strong style="color: var(--c-ins);">X</strong> B)</span>
+      </div>
+
+      <div class="explanations">
+        <div class="exp-line">
+          <span class="exp-lbl" style="color: var(--c-ins);">AST EFFECT:</span>
+          <span class="exp-txt">Grafts leaf node <strong>X</strong> into parent list at target index.</span>
+        </div>
+        <div class="exp-line">
+          <span class="exp-lbl" style="color: var(--text-dim);">OPERATION:</span>
+          <span class="exp-txt">Adds a new node without breaking tree balance.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2: REMOVE -->
+    <div class="card" style="border-top: 3px solid var(--c-rem);">
+      <div class="card-header">
+        <span class="op-number" style="color: var(--c-rem);">2</span>
+        <span class="op-title">REMOVE</span>
+        <span class="category-badge" style="background: var(--c-rem-bg); color: var(--c-rem);">Arity -1</span>
+      </div>
+
+      <div class="tree-box">
+        <div class="tree-side">
+          <span class="tree-side-label">Before</span>
+          <svg class="tree" width="116" height="74" viewBox="0 0 116 74">
+            <line x1="58" y1="20" x2="20" y2="50" class="edge-line" />
+            <line x1="58" y1="20" x2="58" y2="50" stroke="var(--c-rem)" stroke-width="2.2" stroke-dasharray="3,3" />
+            <line x1="58" y1="20" x2="96" y2="50" class="edge-line" />
+            <rect x="33" y="6" width="50" height="24" class="node-bg" />
+            <text x="58" y="18" class="node-text">list</text>
+            <rect x="6" y="50" width="28" height="22" class="leaf-bg" />
+            <text x="20" y="61" class="leaf-text">A</text>
+            <rect x="44" y="50" width="28" height="22" style="fill: var(--c-rem-bg); stroke: var(--c-rem); stroke-width: 2; rx: 5;" />
+            <text x="58" y="61" style="font-family: var(--font-mono); font-size: 14px; font-weight: 800; fill: var(--c-rem); text-anchor: middle; dominant-baseline: central;">X</text>
+            <rect x="82" y="50" width="28" height="22" class="leaf-bg" />
+            <text x="96" y="61" class="leaf-text">B</text>
+          </svg>
+        </div>
+
+        <div class="transition-center">
+          <span class="action-label" style="color: var(--c-rem);">- Prune</span>
+          <svg class="transition-arrow" viewBox="0 0 38 16">
+            <line x1="2" y1="8" x2="28" y2="8" stroke="var(--c-rem)" stroke-width="2.5" stroke-linecap="round"/>
+            <polygon points="26,3 36,8 26,13" fill="var(--c-rem)"/>
+          </svg>
+        </div>
+
+        <div class="tree-side">
+          <span class="tree-side-label">After</span>
+          <svg class="tree" width="86" height="74" viewBox="0 0 86 74">
+            <line x1="43" y1="20" x2="22" y2="50" class="edge-line" />
+            <line x1="43" y1="20" x2="64" y2="50" class="edge-line" />
+            <rect x="18" y="6" width="50" height="24" class="node-bg" />
+            <text x="43" y="18" class="node-text">list</text>
+            <rect x="8" y="50" width="28" height="22" class="leaf-bg" />
+            <text x="22" y="61" class="leaf-text">A</text>
+            <rect x="50" y="50" width="28" height="22" class="leaf-bg" />
+            <text x="64" y="61" class="leaf-text">B</text>
+          </svg>
+        </div>
+      </div>
+
+      <div class="code-box">
+        <span>(list A <span class="cursor">▮</span><span style="color: var(--c-rem);">X</span> B)</span>
+        <span class="code-arrow" style="color: var(--c-rem);">──▶</span>
+        <span>(list A B)</span>
+      </div>
+
+      <div class="explanations">
+        <div class="exp-line">
+          <span class="exp-lbl" style="color: var(--c-rem);">AST EFFECT:</span>
+          <span class="exp-txt">Prunes leaf <strong>X</strong>; remaining siblings collapse cleanly.</span>
+        </div>
+        <div class="exp-line">
+          <span class="exp-lbl" style="color: var(--text-dim);">OPERATION:</span>
+          <span class="exp-txt">Removes the target node without breaking enclosing structure.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 2: HIERARCHY -->
+  <div class="section-banner">
+    <div class="dot" style="background: var(--c-wrap);"></div>
+    <span class="section-title">Hierarchical Operations</span>
+    <span style="color: var(--text-dim);">·</span>
+    <span class="section-subtitle" style="color: var(--c-wrap);">Grouping & Splicing</span>
+  </div>
+
+  <div class="cards-grid">
+    <!-- Card 3: WRAP -->
+    <div class="card" style="border-top: 3px solid var(--c-wrap);">
+      <div class="card-header">
+        <span class="op-number" style="color: var(--c-wrap);">3</span>
+        <span class="op-title">WRAP</span>
+        <span class="category-badge" style="background: var(--c-wrap-bg); color: var(--c-wrap);">Depth +1</span>
+      </div>
+
+      <div class="tree-box">
+        <div class="tree-side">
+          <span class="tree-side-label">Before</span>
+          <svg class="tree" width="104" height="96" viewBox="0 0 104 96">
+            <line x1="52" y1="18" x2="18" y2="46" class="edge-line" />
+            <line x1="52" y1="18" x2="52" y2="46" stroke="var(--c-wrap)" stroke-width="2.2" />
+            <line x1="52" y1="18" x2="86" y2="46" class="edge-line" />
+            <rect x="27" y="6" width="50" height="24" class="node-bg" />
+            <text x="52" y="18" class="node-text">root</text>
+            <rect x="4" y="46" width="28" height="22" class="leaf-bg" />
+            <text x="18" y="57" class="leaf-text">A</text>
+            <rect x="38" y="46" width="28" height="22" style="fill: var(--c-wrap-bg); stroke: var(--c-wrap); stroke-width: 2; rx: 5;" />
+            <text x="52" y="57" style="font-family: var(--font-mono); font-size: 14px; font-weight: 800; fill: var(--c-wrap); text-anchor: middle; dominant-baseline: central;">B</text>
+            <rect x="72" y="46" width="28" height="22" class="leaf-bg" />
+            <text x="86" y="57" class="leaf-text">C</text>
+          </svg>
+        </div>
+
+        <div class="transition-center">
+          <span class="action-label" style="color: var(--c-wrap);">+ Group</span>
+          <svg class="transition-arrow" viewBox="0 0 38 16">
+            <line x1="2" y1="8" x2="28" y2="8" stroke="var(--c-wrap)" stroke-width="2.5" stroke-linecap="round"/>
+            <polygon points="26,3 36,8 26,13" fill="var(--c-wrap)"/>
+          </svg>
+        </div>
+
+        <div class="tree-side">
+          <span class="tree-side-label">After</span>
+          <svg class="tree" width="112" height="96" viewBox="0 0 112 96">
+            <line x1="56" y1="18" x2="18" y2="46" class="edge-line" />
+            <line x1="56" y1="18" x2="56" y2="46" stroke="var(--c-wrap)" stroke-width="2.2" />
+            <line x1="56" y1="18" x2="94" y2="46" class="edge-line" />
+            <line x1="56" y1="60" x2="56" y2="72" stroke="var(--c-wrap)" stroke-width="2.2" />
+            <rect x="31" y="6" width="50" height="24" class="node-bg" />
+            <text x="56" y="18" class="node-text">root</text>
+            <rect x="4" y="46" width="28" height="22" class="leaf-bg" />
+            <text x="18" y="57" class="leaf-text">A</text>
+            <rect x="38" y="46" width="36" height="22" style="fill: var(--c-wrap-bg); stroke: var(--c-wrap); stroke-width: 2; rx: 5;" />
+            <text x="56" y="57" style="font-family: var(--font-mono); font-size: 13px; font-weight: 800; fill: var(--c-wrap); text-anchor: middle; dominant-baseline: central;">( )</text>
+            <rect x="80" y="46" width="28" height="22" class="leaf-bg" />
+            <text x="94" y="57" class="leaf-text">C</text>
+            <rect x="42" y="72" width="28" height="22" style="fill: var(--c-wrap-bg); stroke: var(--c-wrap); stroke-width: 2; rx: 5;" />
+            <text x="56" y="83" style="font-family: var(--font-mono); font-size: 14px; font-weight: 800; fill: var(--c-wrap); text-anchor: middle; dominant-baseline: central;">B</text>
+          </svg>
+        </div>
+      </div>
+
+      <div class="code-box">
+        <span>(root A <span class="cursor">▮</span><span style="color: var(--c-wrap);">B</span> C)</span>
+        <span class="code-arrow" style="color: var(--c-wrap);">──▶</span>
+        <span>(root A <strong style="color: var(--c-wrap);">(B)</strong> C)</span>
+      </div>
+
+      <div class="explanations">
+        <div class="exp-line">
+          <span class="exp-lbl" style="color: var(--c-wrap);">AST EFFECT:</span>
+          <span class="exp-txt">Creates parent node <strong>( )</strong>; demotes B one level deeper.</span>
+        </div>
+        <div class="exp-line">
+          <span class="exp-lbl" style="color: var(--text-dim);">OPERATION:</span>
+          <span class="exp-txt">Encloses target node inside a new balanced parent list.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 4: UNWRAP -->
+    <div class="card" style="border-top: 3px solid var(--c-unw);">
+      <div class="card-header">
+        <span class="op-number" style="color: var(--c-unw);">4</span>
+        <span class="op-title">UNWRAP / SPLICE</span>
+        <span class="category-badge" style="background: var(--c-unw-bg); color: var(--c-unw);">Depth -1</span>
+      </div>
+
+      <div class="tree-box">
+        <div class="tree-side">
+          <span class="tree-side-label">Before</span>
+          <svg class="tree" width="112" height="96" viewBox="0 0 112 96">
+            <line x1="56" y1="18" x2="18" y2="46" class="edge-line" />
+            <line x1="56" y1="18" x2="56" y2="46" stroke="var(--c-unw)" stroke-width="2.2" stroke-dasharray="3,3" />
+            <line x1="56" y1="18" x2="94" y2="46" class="edge-line" />
+            <line x1="56" y1="60" x2="56" y2="72" stroke="var(--c-unw)" stroke-width="2.2" />
+            <rect x="31" y="6" width="50" height="24" class="node-bg" />
+            <text x="56" y="18" class="node-text">root</text>
+            <rect x="4" y="46" width="28" height="22" class="leaf-bg" />
+            <text x="18" y="57" class="leaf-text">A</text>
+            <rect x="38" y="46" width="36" height="22" style="fill: var(--c-unw-bg); stroke: var(--c-unw); stroke-width: 2; rx: 5;" />
+            <text x="56" y="57" style="font-family: var(--font-mono); font-size: 13px; font-weight: 800; fill: var(--c-unw); text-anchor: middle; dominant-baseline: central;">( )</text>
+            <rect x="80" y="46" width="28" height="22" class="leaf-bg" />
+            <text x="94" y="57" class="leaf-text">C</text>
+            <rect x="42" y="72" width="28" height="22" style="fill: var(--c-unw-bg); stroke: var(--c-unw); stroke-width: 2; rx: 5;" />
+            <text x="56" y="83" style="font-family: var(--font-mono); font-size: 14px; font-weight: 800; fill: var(--c-unw); text-anchor: middle; dominant-baseline: central;">B</text>
+          </svg>
+        </div>
+
+        <div class="transition-center">
+          <span class="action-label" style="color: var(--c-unw);">- Splice</span>
+          <svg class="transition-arrow" viewBox="0 0 38 16">
+            <line x1="2" y1="8" x2="28" y2="8" stroke="var(--c-unw)" stroke-width="2.5" stroke-linecap="round"/>
+            <polygon points="26,3 36,8 26,13" fill="var(--c-unw)"/>
+          </svg>
+        </div>
+
+        <div class="tree-side">
+          <span class="tree-side-label">After</span>
+          <svg class="tree" width="104" height="96" viewBox="0 0 104 96">
+            <line x1="52" y1="18" x2="18" y2="46" class="edge-line" />
+            <line x1="52" y1="18" x2="52" y2="46" stroke="var(--c-unw)" stroke-width="2.2" />
+            <line x1="52" y1="18" x2="86" y2="46" class="edge-line" />
+            <rect x="27" y="6" width="50" height="24" class="node-bg" />
+            <text x="52" y="18" class="node-text">root</text>
+            <rect x="4" y="46" width="28" height="22" class="leaf-bg" />
+            <text x="18" y="57" class="leaf-text">A</text>
+            <rect x="38" y="46" width="28" height="22" style="fill: var(--c-unw-bg); stroke: var(--c-unw); stroke-width: 2; rx: 5;" />
+            <text x="52" y="57" style="font-family: var(--font-mono); font-size: 14px; font-weight: 800; fill: var(--c-unw); text-anchor: middle; dominant-baseline: central;">B</text>
+            <rect x="72" y="46" width="28" height="22" class="leaf-bg" />
+            <text x="86" y="57" class="leaf-text">C</text>
+          </svg>
+        </div>
+      </div>
+
+      <div class="code-box">
+        <span>(root A <span style="color: var(--c-unw);">(<span class="cursor">▮</span>B)</span> C)</span>
+        <span class="code-arrow" style="color: var(--c-unw);">──▶</span>
+        <span>(root A <strong style="color: var(--c-unw);">B</strong> C)</span>
+      </div>
+
+      <div class="explanations">
+        <div class="exp-line">
+          <span class="exp-lbl" style="color: var(--c-unw);">AST EFFECT:</span>
+          <span class="exp-txt">Dissolves parent <strong>( )</strong>; promotes B to sibling of A & C.</span>
+        </div>
+        <div class="exp-line">
+          <span class="exp-lbl" style="color: var(--text-dim);">OPERATION:</span>
+          <span class="exp-txt">Splices delimiter away, elevating children to outer scope.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 3: BOUNDARY -->
+  <div class="section-banner">
+    <div class="dot" style="background: var(--c-slurp);"></div>
+    <span class="section-title">Boundary Operations</span>
+    <span style="color: var(--text-dim);">·</span>
+    <span class="section-subtitle" style="color: var(--c-slurp);">Horizontal Reparenting</span>
+  </div>
+
+  <div class="cards-grid">
+    <!-- Card 5: SLURP -->
+    <div class="card" style="border-top: 3px solid var(--c-slurp);">
+      <div class="card-header">
+        <span class="op-number" style="color: var(--c-slurp);">5</span>
+        <span class="op-title">SLURP</span>
+        <span class="category-badge" style="background: var(--c-slurp-bg); color: var(--c-slurp);">Reparent In</span>
+      </div>
+
+      <div class="tree-box">
+        <div class="tree-side">
+          <span class="tree-side-label">Before</span>
+          <svg class="tree" width="112" height="96" viewBox="0 0 112 96">
+            <line x1="56" y1="18" x2="34" y2="46" class="edge-line" />
+            <line x1="56" y1="18" x2="90" y2="46" stroke="var(--c-slurp)" stroke-width="2.2" />
+            <line x1="34" y1="60" x2="16" y2="72" class="edge-line" />
+            <line x1="34" y1="60" x2="52" y2="72" class="edge-line" />
+            <rect x="31" y="6" width="50" height="24" class="node-bg" />
+            <text x="56" y="18" class="node-text">root</text>
+            <rect x="12" y="46" width="44" height="22" class="node-bg" />
+            <text x="34" y="57" class="node-text">sub</text>
+            <rect x="76" y="46" width="28" height="22" style="fill: var(--c-slurp-bg); stroke: var(--c-slurp); stroke-width: 2; rx: 5;" />
+            <text x="90" y="57" style="font-family: var(--font-mono); font-size: 14px; font-weight: 800; fill: var(--c-slurp); text-anchor: middle; dominant-baseline: central;">C</text>
+            <rect x="2" y="72" width="28" height="22" class="leaf-bg" />
+            <text x="16" y="83" class="leaf-text">A</text>
+            <rect x="38" y="72" width="28" height="22" class="leaf-bg" />
+            <text x="52" y="83" class="leaf-text">B</text>
+          </svg>
+        </div>
+
+        <div class="transition-center">
+          <span class="action-label" style="color: var(--c-slurp);">▶ Absorb</span>
+          <svg class="transition-arrow" viewBox="0 0 38 16">
+            <line x1="2" y1="8" x2="28" y2="8" stroke="var(--c-slurp)" stroke-width="2.5" stroke-linecap="round"/>
+            <polygon points="26,3 36,8 26,13" fill="var(--c-slurp)"/>
+          </svg>
+        </div>
+
+        <div class="tree-side">
+          <span class="tree-side-label">After</span>
+          <svg class="tree" width="116" height="96" viewBox="0 0 116 96">
+            <line x1="58" y1="18" x2="58" y2="46" class="edge-line" />
+            <line x1="58" y1="60" x2="18" y2="72" class="edge-line" />
+            <line x1="58" y1="60" x2="58" y2="72" class="edge-line" />
+            <line x1="58" y1="60" x2="98" y2="72" stroke="var(--c-slurp)" stroke-width="2.2" />
+            <rect x="33" y="6" width="50" height="24" class="node-bg" />
+            <text x="58" y="18" class="node-text">root</text>
+            <rect x="36" y="46" width="44" height="22" class="node-bg" />
+            <text x="58" y="57" class="node-text">sub</text>
+            <rect x="4" y="72" width="28" height="22" class="leaf-bg" />
+            <text x="18" y="83" class="leaf-text">A</text>
+            <rect x="44" y="72" width="28" height="22" class="leaf-bg" />
+            <text x="58" y="83" class="leaf-text">B</text>
+            <rect x="84" y="72" width="28" height="22" style="fill: var(--c-slurp-bg); stroke: var(--c-slurp); stroke-width: 2; rx: 5;" />
+            <text x="98" y="83" style="font-family: var(--font-mono); font-size: 14px; font-weight: 800; fill: var(--c-slurp); text-anchor: middle; dominant-baseline: central;">C</text>
+          </svg>
+        </div>
+      </div>
+
+      <div class="code-box">
+        <span>(root (A B<span class="cursor">▮</span>) <span style="color: var(--c-slurp);">C</span>)</span>
+        <span class="code-arrow" style="color: var(--c-slurp);">──▶</span>
+        <span>(root (A B <strong style="color: var(--c-slurp);">C</strong>))</span>
+      </div>
+
+      <div class="explanations">
+        <div class="exp-line">
+          <span class="exp-lbl" style="color: var(--c-slurp);">AST EFFECT:</span>
+          <span class="exp-txt">Sibling <strong>C</strong> reparented from root child to newest sub child.</span>
+        </div>
+        <div class="exp-line">
+          <span class="exp-lbl" style="color: var(--text-dim);">OPERATION:</span>
+          <span class="exp-txt">Expands sub-list boundary outward to absorb sibling.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 6: BARF -->
+    <div class="card" style="border-top: 3px solid var(--c-barf);">
+      <div class="card-header">
+        <span class="op-number" style="color: var(--c-barf);">6</span>
+        <span class="op-title">BARF</span>
+        <span class="category-badge" style="background: var(--c-barf-bg); color: var(--c-barf);">Reparent Out</span>
+      </div>
+
+      <div class="tree-box">
+        <div class="tree-side">
+          <span class="tree-side-label">Before</span>
+          <svg class="tree" width="116" height="96" viewBox="0 0 116 96">
+            <line x1="58" y1="18" x2="58" y2="46" class="edge-line" />
+            <line x1="58" y1="60" x2="18" y2="72" class="edge-line" />
+            <line x1="58" y1="60" x2="58" y2="72" class="edge-line" />
+            <line x1="58" y1="60" x2="98" y2="72" stroke="var(--c-barf)" stroke-width="2.2" />
+            <rect x="33" y="6" width="50" height="24" class="node-bg" />
+            <text x="58" y="18" class="node-text">root</text>
+            <rect x="36" y="46" width="44" height="22" class="node-bg" />
+            <text x="58" y="57" class="node-text">sub</text>
+            <rect x="4" y="72" width="28" height="22" class="leaf-bg" />
+            <text x="18" y="83" class="leaf-text">A</text>
+            <rect x="44" y="72" width="28" height="22" class="leaf-bg" />
+            <text x="58" y="83" class="leaf-text">B</text>
+            <rect x="84" y="72" width="28" height="22" style="fill: var(--c-barf-bg); stroke: var(--c-barf); stroke-width: 2; rx: 5;" />
+            <text x="98" y="83" style="font-family: var(--font-mono); font-size: 14px; font-weight: 800; fill: var(--c-barf); text-anchor: middle; dominant-baseline: central;">C</text>
+          </svg>
+        </div>
+
+        <div class="transition-center">
+          <span class="action-label" style="color: var(--c-barf);">◀ Eject</span>
+          <svg class="transition-arrow" viewBox="0 0 38 16">
+            <line x1="2" y1="8" x2="28" y2="8" stroke="var(--c-barf)" stroke-width="2.5" stroke-linecap="round"/>
+            <polygon points="26,3 36,8 26,13" fill="var(--c-barf)"/>
+          </svg>
+        </div>
+
+        <div class="tree-side">
+          <span class="tree-side-label">After</span>
+          <svg class="tree" width="112" height="96" viewBox="0 0 112 96">
+            <line x1="56" y1="18" x2="34" y2="46" class="edge-line" />
+            <line x1="56" y1="18" x2="90" y2="46" stroke="var(--c-barf)" stroke-width="2.2" />
+            <line x1="34" y1="60" x2="16" y2="72" class="edge-line" />
+            <line x1="34" y1="60" x2="52" y2="72" class="edge-line" />
+            <rect x="31" y="6" width="50" height="24" class="node-bg" />
+            <text x="56" y="18" class="node-text">root</text>
+            <rect x="12" y="46" width="44" height="22" class="node-bg" />
+            <text x="34" y="57" class="node-text">sub</text>
+            <rect x="76" y="46" width="28" height="22" style="fill: var(--c-barf-bg); stroke: var(--c-barf); stroke-width: 2; rx: 5;" />
+            <text x="90" y="57" style="font-family: var(--font-mono); font-size: 14px; font-weight: 800; fill: var(--c-barf); text-anchor: middle; dominant-baseline: central;">C</text>
+            <rect x="2" y="72" width="28" height="22" class="leaf-bg" />
+            <text x="16" y="83" class="leaf-text">A</text>
+            <rect x="38" y="72" width="28" height="22" class="leaf-bg" />
+            <text x="52" y="83" class="leaf-text">B</text>
+          </svg>
+        </div>
+      </div>
+
+      <div class="code-box">
+        <span>(root (A B <span style="color: var(--c-barf);">C</span><span class="cursor">▮</span>))</span>
+        <span class="code-arrow" style="color: var(--c-barf);">──▶</span>
+        <span>(root (A B) <strong style="color: var(--c-barf);">C</strong>)</span>
+      </div>
+
+      <div class="explanations">
+        <div class="exp-line">
+          <span class="exp-lbl" style="color: var(--c-barf);">AST EFFECT:</span>
+          <span class="exp-txt">Child <strong>C</strong> expelled from sub and promoted to external sibling.</span>
+        </div>
+        <div class="exp-line">
+          <span class="exp-lbl" style="color: var(--text-dim);">OPERATION:</span>
+          <span class="exp-txt">Contracts sub-list boundary inward, pushing child outside.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Dynamic Height Messenger to Parent Frame -->
+<script>
+  function notifyHeight() {
+    const container = document.getElementById('main-container');
+    const height = Math.ceil((container ? container.scrollHeight : document.body.scrollHeight) + 40);
+    window.parent.postMessage({ type: 'structural-figure-resize', height: height }, '*');
+  }
+
+  window.addEventListener('load', notifyHeight);
+  window.addEventListener('resize', notifyHeight);
+  if (window.ResizeObserver) {
+    new ResizeObserver(notifyHeight).observe(document.body);
+  }
+  setTimeout(notifyHeight, 100);
+  setTimeout(notifyHeight, 500);
+</script>
+
+</body>
+</html>
